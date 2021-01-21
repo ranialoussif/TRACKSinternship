@@ -1,0 +1,154 @@
+<html>
+<head>
+    <title>CO2 Analytics </title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css">
+
+</head>
+
+<body>
+<div class="container mt-5">
+    <div class="row mb-5">
+        <div class="col-md-11">
+            <div class="row col-md-6">
+                <div class="input-group mb-3">
+                    <label class="input-group-text" for="Filter">Filter By</label>
+                    <select class="form-select" id="Filter" onchange="filter(this)">
+                        <option value="empty" selected disabled>Choose one</option>
+                        <option value="all">All</option>
+                        <option value="type_of_calculations">Type of calculations</option>
+                        <option value="type_of_goods">Type of Good</option>
+                        <option value="start_city">Start city</option>
+                        <option value="end_city">End city</option>
+                    </select>
+                </div>
+
+            </div>
+            <hr>
+            <div class="row col-md-6 mt-4">
+                <label for="start_date" class="form-label">Start date</label>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">Start date: </span>
+                    <input type="datetime-local" class="form-control" name="start_date" id="start_date"
+                           aria-describedby="start_date">
+                </div>
+            </div>
+            <div class="row col-md-6 mt-4">
+                <label for="end_date" class="form-label">End date</label>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">End date: </span>
+                    <input type="datetime-local" class="form-control" name="end_date" id="end_date"
+                           aria-describedby="end_date">
+                </div>
+
+            </div>
+            <div class="row col-md-6 mt-4">
+                <button type="button" class="btn btn-outline-primary" onclick="fixDate()">Apply</button>
+            </div>
+        </div>
+        <div class="col-md-1">
+            <a href="/logout">Logout</a>
+        </div>
+    </div>
+    <table id="table_id" class="display ">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>CO2 Emission</th>
+            <th>Distance</th>
+            <th>Average weight of shipments</th>
+            <th>Intensity Factor</th>
+            <th>Default period last 10 weeks</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for shipment in shipments %}
+            <tr>
+                <td>{{ shipment[0] }}</td>
+                <td>{{ shipment[19] }}</td>
+                <td>{{ shipment[5] }}</td>
+                <td>{{ shipment[8] }}</td>
+                <td>{{ shipment[0] }}</td>
+                <td>{{ shipment[20].strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td>
+                    <a href="/analytics/carrier/{{ shipment[0] }}">
+                        <button class="btn btn-outline-primary">More info about carrier</button>
+                    </a>
+                </td>
+            </tr>
+
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+
+<script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function () {
+        var filter = location.search.split('filter=')[1];
+        if (filter !== undefined) {
+            $("#Filter").val(filter);
+        }
+        $('#table_id').DataTable();
+    });
+
+    function filter(e) {
+        var selectedValue = e.options[e.selectedIndex].value;
+        if (selectedValue !== "empty") {
+            window.location.href = "/analytics?filter=" + selectedValue;
+        } else {
+            alert("empty");
+        }
+    }
+
+    function fixDate() {
+        let start_date = document.getElementById("start_date").value;
+        let end_date = document.getElementById("end_date").value;
+        let data = {"start_date": start_date, "end_date": end_date};
+        let request = $.ajax({
+            url: "/analytics/date",
+            type: "post",
+            data: data
+        });
+
+        request.done(function (response, textStatus, jqXHR) {
+            let table = $('#table_id').DataTable();
+            table.clear();
+            for (shimpent of response) {
+                table.row.add([
+                    shimpent[0],
+                    shimpent[19],
+                    shimpent[5],
+                    shimpent[8],
+                    shimpent[0],
+                    new Date(shimpent[20]).toString(),
+                    "<a href='/analytics/carrier/" + shimpent[0] + "'>  <button class='btn btn-outline-primary'>More info about carrier</button></a>"
+                ]);
+            }
+
+            table.draw();
+        });
+        request.fail(function (jqXHR, textStatus, errorThrown) {
+            console.error(
+                "The following error occurred: " +
+                textStatus, errorThrown
+            );
+        });
+
+    }
+
+</script>
+</body>
+</html>
